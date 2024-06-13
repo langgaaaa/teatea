@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Birthday Cake</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000000;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+        }
+        .cake {
+            width: 300px;
+            height: 200px;
+            background-color: #ffffff;
+            position: relative;
+            box-shadow: 0px 10px 20px rgba(0,0,0,0.2);
+            margin-top: 310px;
+        }
+        .cake::before {
+            content: "";
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            width: 180px;
+            height: 25px;
+            background-color: #87CEEB;
+            border-radius: 15px 15px 0 0;
+            transform: translateX(-50%);
+        }
+        .candle {
+            width: 25px;
+            height: 100px;
+            background-color: pink;
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 15px;
+            box-shadow: 0px 0px 5px rgba(0,0,0,0.5);
+        }
+        .flame {
+            width: 25px;
+            height: 75px;
+            background-color: orange;
+            position: absolute;
+            top: -75px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50% 50% 0 0;
+            animation: flicker 0.3s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { opacity: 1; transform: translateX(-50%) translateY(-2px); }
+            100% { opacity: 0.6; transform: translateX(-50%) translateY(2px); }
+        }
+        .message {
+            margin-top: -220px;
+            font-size: 15px;
+        }
+        .heart {
+            font-size: 15px;
+            color: #9DC183; /* Sage green color */
+        }
+    </style>
+</head>
+<body>
+    <div class="message">HAPPY BIRTHDAY LANGGA! 😙<span class="heart">💚</span><br>Since I'm not physically there to celebrate it with you, I hope that with this you'll still feel like I'm close to you. Now you go ahead and wish for something good for your birthday love.</div>
+    <div class="cake">
+        <div class="candle">
+            <div class="flame" id="flame"></div>
+        </div>
+    </div>
+    <audio id="birthdaySong" src="happy_birthday.mp3" autoplay loop></audio>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const audio = document.getElementById('birthdaySong');
+            const flame = document.getElementById('flame');
+
+            // Ensure audio plays on page load
+            audio.play().catch(error => {
+                console.error('Error playing the audio:', error);
+            });
+
+            // Detect sound input
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const analyser = audioContext.createAnalyser();
+                    const microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    analyser.fftSize = 256;
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+
+                    function checkForBlow() {
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for (let i = 0; i < bufferLength; i++) {
+                            sum += dataArray[i];
+                        }
+                        const average = sum / bufferLength;
+                        console.log('Sound level:', average); // Log sound level for debugging
+                        if (average > 30) { // Lowered threshold to make it more sensitive
+                            flame.style.display = 'none';
+                            audio.pause(); // Pause the audio when the flame goes out
+                        } else {
+                            flame.style.display = 'block';
+                            audio.play().catch(error => {
+                                console.error('Error playing the audio:', error);
+                            });
+                        }
+                        requestAnimationFrame(checkForBlow);
+                    }
+                    checkForBlow();
+                }).catch(error => {
+                    console.error('Error accessing the microphone', error);
+                });
+            } else {
+                alert('Microphone not supported');
+            }
+        });
+    </script>
+</body>
+</html>
